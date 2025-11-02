@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Dishes collection - Allow all operations for now (no auth)
+    match /dishes/{dishId} {
+      allow read, write: if true;
+    }
+    
+    // Orders collection - Allow all operations for now (no auth)
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+  }
+}
