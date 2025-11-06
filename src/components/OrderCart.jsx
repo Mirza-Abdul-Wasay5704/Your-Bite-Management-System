@@ -1,7 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const OrderCart = ({ cartItems, onUpdateQuantity, onRemove, onPlaceOrder, isOpen, onToggle, isPlacing = false }) => {
   const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const [receivedAmount, setReceivedAmount] = useState('');
+  const [change, setChange] = useState(0);
+
+  // Calculate change whenever received amount or total changes
+  useEffect(() => {
+    const received = parseFloat(receivedAmount) || 0;
+    const calculatedChange = received - total;
+    setChange(calculatedChange >= 0 ? calculatedChange : 0);
+  }, [receivedAmount, total]);
+
+  // Reset received amount when cart is empty
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setReceivedAmount('');
+      setChange(0);
+    }
+  }, [cartItems.length]);
 
   return (
     <>
@@ -82,17 +99,60 @@ const OrderCart = ({ cartItems, onUpdateQuantity, onRemove, onPlaceOrder, isOpen
           )}
         </div>
 
-        <div className="border-t-2 border-primary p-3 sm:p-4 bg-background">
-          <div className="flex justify-between items-center mb-3 sm:mb-4">
-            <span className="text-base sm:text-lg font-semibold text-secondary">Total:</span>
-            <span className="text-xl sm:text-2xl font-bold text-primary">Rs. {total}</span>
+        <div className="border-t-2 border-primary p-3 sm:p-4 bg-background space-y-3">
+          {/* Total Amount - Prominent */}
+          <div className="bg-primary rounded-lg p-2.5 sm:p-3 shadow-md border border-secondary">
+            <div className="flex justify-between items-center">
+              <span className="text-base sm:text-lg font-bold text-secondary">Total Amount:</span>
+              <span className="text-xl sm:text-2xl font-bold text-secondary">Rs. {total}</span>
+            </div>
           </div>
+
+          {/* Received Amount Input */}
+          {cartItems.length > 0 && (
+            <>
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-secondary mb-1.5">
+                  Received Amount (Rs.) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={receivedAmount}
+                  onChange={(e) => setReceivedAmount(e.target.value)}
+                  placeholder="Enter amount received"
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-secondary font-medium text-sm sm:text-base"
+                />
+              </div>
+
+              {/* Change to Return - Only show if received amount is entered */}
+              {receivedAmount && parseFloat(receivedAmount) >= total && (
+                <div className="bg-green-100 rounded-lg p-2 sm:p-2.5 border border-green-500">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm sm:text-base font-bold text-green-800">Change to Return:</span>
+                    <span className="text-lg sm:text-xl font-bold text-green-800">Rs. {change}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Warning if received amount is less than total */}
+              {receivedAmount && parseFloat(receivedAmount) < total && (
+                <div className="bg-red-100 rounded-lg p-2 border border-red-400">
+                  <p className="text-xs sm:text-sm text-red-700 font-semibold text-center">
+                    ⚠️ Insufficient amount! Need Rs. {(total - parseFloat(receivedAmount)).toFixed(2)} more
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
           <button
             onClick={onPlaceOrder}
             disabled={cartItems.length === 0 || isPlacing}
             className={`w-full py-2.5 sm:py-3 rounded-lg font-bold transition-all text-sm sm:text-base active:scale-95 shadow-md ${
               cartItems.length > 0 && !isPlacing
-                ? 'bg-primary text-secondary hover:shadow-xl hover:bg-accent'
+                ? 'bg-secondary text-primary hover:shadow-xl hover:bg-gray-800'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >

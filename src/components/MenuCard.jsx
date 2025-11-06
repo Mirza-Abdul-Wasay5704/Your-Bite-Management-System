@@ -29,9 +29,16 @@ const MenuCard = ({ dish, onAddToOrder, onEdit, onDelete, isMenuPage = false }) 
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-base sm:text-lg text-secondary truncate">{dish.name}</h3>
-            <span className="text-xs sm:text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full inline-block mt-1">
-              {dish.category}
-            </span>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              <span className="text-xs sm:text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full inline-block">
+                {dish.category}
+              </span>
+              {dish.servingSize && (
+                <span className="text-xs sm:text-sm text-gray-700 bg-amber-100 px-2 py-1 rounded-full inline-block font-medium border border-amber-300">
+                  🍽️ {dish.servingSize}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
