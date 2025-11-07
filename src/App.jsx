@@ -7,6 +7,7 @@ const MenuPage = lazy(() => import('./pages/MenuPage'));
 const OrdersPage = lazy(() => import('./pages/OrdersPage'));
 const KitchenPage = lazy(() => import('./pages/KitchenPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const CustomersPage = lazy(() => import('./pages/CustomersPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 
 // Loading component
@@ -51,6 +52,7 @@ function App() {
           import('./pages/OrdersPage'),
           import('./pages/KitchenPage'),
           import('./pages/DashboardPage'),
+          import('./pages/CustomersPage'),
         ]);
       };
 
@@ -119,6 +121,14 @@ function App() {
                 element={
                   <ProtectedRoute isAuthenticated={isAuthenticated}>
                     <DashboardPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/customers" 
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <CustomersPage />
                   </ProtectedRoute>
                 } 
               />

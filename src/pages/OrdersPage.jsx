@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, onSnapshot, serverTimestamp, query, orderBy, setDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, serverTimestamp, query, orderBy, setDoc, doc, getDocs, where } from 'firebase/firestore';
 import MenuCard from '../components/MenuCard';
 import OrderCart from '../components/OrderCart';
 
@@ -11,6 +11,8 @@ const OrdersPage = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isPlacing, setIsPlacing] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
   const pendingOrderIdRef = useRef(null);
 
   const categories = ['All', 'Pizza', 'Pasta', 'Burgers', 'Desserts', 'Beverages', 'Sides'];
@@ -59,6 +61,17 @@ const OrdersPage = () => {
     setCartItems(newCartItems);
   };
 
+  const handlePlaceOrderClick = () => {
+    if (cartItems.length === 0) return;
+    setShowCustomerModal(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    // Allow order without customer info (they can skip it)
+    setShowCustomerModal(false);
+    await handlePlaceOrder();
+  };
+
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0 || isPlacing) return;
     setIsPlacing(true);
@@ -67,6 +80,12 @@ const OrdersPage = () => {
       // Stable doc id so repeated clicks overwrite instead of duplicating
       if (!pendingOrderIdRef.current) {
         pendingOrderIdRef.current = doc(collection(db, 'orders')).id;
+      }
+
+      // Save or update customer only if info is provided
+      let customerId = null;
+      if (customerInfo.name || customerInfo.phone) {
+        customerId = await saveCustomer(customerInfo);
       }
 
       // Get latest order number once
@@ -94,6 +113,9 @@ const OrdersPage = () => {
         })),
         total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         status: 'Pending',
+        customerId: customerId || null,
+        customerName: customerInfo.name || 'Walk-in Customer',
+        customerPhone: customerInfo.phone || 'N/A',
         createdAt: serverTimestamp()
       };
 
@@ -101,12 +123,63 @@ const OrdersPage = () => {
 
       // Optimistic UI clear
       setCartItems([]);
+      setCustomerInfo({ name: '', phone: '' });
       setIsCartOpen(false);
     } catch (error) {
       console.error('Error placing order:', error);
+      alert('Error placing order. Please try again.');
     } finally {
       pendingOrderIdRef.current = null;
       setIsPlacing(false);
+    }
+  };
+
+  // Save customer to database (avoid duplicates by phone number)
+  const saveCustomer = async (customerData) => {
+    try {
+      // Skip if both name and phone are empty
+      if (!customerData.name && !customerData.phone) {
+        return null;
+      }
+
+      // If phone is provided, check for existing customer
+      if (customerData.phone) {
+        const customersRef = collection(db, 'customers');
+        const q = query(customersRef, where('phone', '==', customerData.phone));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          // Customer exists, update their info and return existing ID
+          const existingCustomer = querySnapshot.docs[0];
+          const customerId = existingCustomer.id;
+          
+          // Update customer data (in case name changed or was added)
+          await setDoc(doc(db, 'customers', customerId), {
+            name: customerData.name || existingCustomer.data().name || 'Walk-in Customer',
+            phone: customerData.phone,
+            lastOrderDate: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+
+          return customerId;
+        }
+      }
+
+      // New customer, create new document
+      const newCustomerRef = doc(collection(db, 'customers'));
+      await setDoc(newCustomerRef, {
+        name: customerData.name || 'Walk-in Customer',
+        phone: customerData.phone || 'N/A',
+        firstOrderDate: serverTimestamp(),
+        lastOrderDate: serverTimestamp(),
+        createdAt: serverTimestamp()
+      });
+
+      return newCustomerRef.id;
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      // Return null if customer save fails - order can still proceed
+      return null;
     }
   };
 
@@ -177,11 +250,81 @@ const OrdersPage = () => {
         cartItems={cartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemove={handleRemoveItem}
-        onPlaceOrder={handlePlaceOrder}
+        onPlaceOrder={handlePlaceOrderClick}
         isPlacing={isPlacing}
         isOpen={isCartOpen}
         onToggle={() => setIsCartOpen(!isCartOpen)}
       />
+
+      {/* Customer Information Modal */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border-2 border-primary">
+            <h2 className="text-2xl font-bold text-secondary mb-2">Customer Information</h2>
+            <p className="text-gray-600 mb-6 text-sm">
+              Enter customer details (optional) or skip to proceed with the order
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-secondary mb-2">
+                  Customer Name <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={customerInfo.name}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                  placeholder="Enter customer name"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-secondary font-medium"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-secondary mb-2">
+                  Phone Number <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="tel"
+                  value={customerInfo.phone}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                  placeholder="e.g., 03001234567"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none text-secondary font-medium"
+                />
+              </div>
+
+              <div className="bg-primary rounded-lg p-3 border border-secondary">
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-bold text-secondary">Order Total:</span>
+                  <span className="text-2xl font-bold text-secondary">
+                    Rs. {cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCustomerModal(false);
+                  setCustomerInfo({ name: '', phone: '' });
+                }}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-secondary font-semibold py-3 rounded-lg transition-all"
+                disabled={isPlacing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmOrder}
+                disabled={isPlacing}
+                className="flex-1 bg-secondary text-primary hover:bg-gray-800 font-semibold py-3 rounded-lg transition-all disabled:opacity-50"
+              >
+                {isPlacing ? 'Placing...' : (customerInfo.name || customerInfo.phone ? 'Confirm Order' : 'Skip & Place Order')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

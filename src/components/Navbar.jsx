@@ -85,6 +85,17 @@ const Navbar = ({ onLogout }) => {
                 <span className="text-base sm:text-xl">📊</span>
                 <span className="text-xs sm:text-base">Stats</span>
               </Link>
+              <Link
+                to="/customers"
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
+                  isActive('/customers') 
+                    ? 'bg-primary text-secondary font-semibold shadow-md' 
+                    : 'hover:bg-gray-800 text-gray-300'
+                }`}
+              >
+                <span className="text-base sm:text-xl">👥</span>
+                <span className="text-xs sm:text-base">Customers</span>
+              </Link>
               
               {/* Logout Button */}
               <button

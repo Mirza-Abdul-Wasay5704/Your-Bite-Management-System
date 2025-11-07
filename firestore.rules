@@ -12,5 +12,10 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read, write: if true;
     }
+    
+    // Customers collection - Allow all operations for now (no auth)
+    match /customers/{customerId} {
+      allow read, write: if true;
+    }
   }
 }

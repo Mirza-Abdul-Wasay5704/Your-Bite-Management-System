@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-const OrderCart = ({ cartItems, onUpdateQuantity, onRemove, onPlaceOrder, isOpen, onToggle, isPlacing = false }) => {
+const OrderCart = ({ 
+  cartItems, 
+  onUpdateQuantity, 
+  onRemove, 
+  onPlaceOrder, 
+  isOpen, 
+  onToggle, 
+  isPlacing = false
+}) => {
   const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const [receivedAmount, setReceivedAmount] = useState('');
   const [change, setChange] = useState(0);
@@ -49,14 +57,14 @@ const OrderCart = ({ cartItems, onUpdateQuantity, onRemove, onPlaceOrder, isOpen
           isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="bg-secondary text-primary p-3 sm:p-4 flex items-center justify-between border-b-2 border-primary">
+        <div className="bg-secondary text-primary p-3 sm:p-4 flex items-center justify-between border-b-2 border-primary flex-shrink-0">
           <h2 className="text-lg sm:text-xl font-bold">Current Order</h2>
           <button onClick={onToggle} className="lg:hidden text-xl sm:text-2xl active:scale-90 transition-transform hover:text-accent">
             ✕
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3 min-h-0">
           {cartItems.length === 0 ? (
             <div className="text-center text-gray-500 mt-8">
               <p className="text-3xl sm:text-4xl mb-2">🛒</p>
@@ -99,7 +107,7 @@ const OrderCart = ({ cartItems, onUpdateQuantity, onRemove, onPlaceOrder, isOpen
           )}
         </div>
 
-        <div className="border-t-2 border-primary p-3 sm:p-4 bg-background space-y-3">
+        <div className="border-t-2 border-primary p-3 sm:p-4 bg-background space-y-2.5 flex-shrink-0">
           {/* Total Amount - Prominent */}
           <div className="bg-primary rounded-lg p-2.5 sm:p-3 shadow-md border border-secondary">
             <div className="flex justify-between items-center">
@@ -113,7 +121,7 @@ const OrderCart = ({ cartItems, onUpdateQuantity, onRemove, onPlaceOrder, isOpen
             <>
               <div>
                 <label className="block text-xs sm:text-sm font-semibold text-secondary mb-1.5">
-                  Received Amount (Rs.) *
+                  Received Amount (Rs.)
                 </label>
                 <input
                   type="number"
